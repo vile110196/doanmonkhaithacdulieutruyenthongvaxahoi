@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Tổng Quan | Dự Đoán Cổ Phiếu {{ current_symbol }}{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <!-- CỘT TRÁI: THẺ KẾT QUẢ DỰ ĐOÁN PHIÊN TIẾP THEO (HERO CARD) -->
+  <div class="col-lg-7">
+    <div class="glass-card prediction-hero-card h-100">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <span class="badge bg-primary-subtle text-primary fw-bold text-uppercase px-3 py-1 mb-2">
+            <i class="bi bi-cpu-fill me-1"></i> Thuật Toán: {{ prediction.model_name }}
+          </span>
+          <h2 class="fw-extrabold mb-0 text-white">Mã Cổ Phiếu: <span class="text-warning">{{ current_symbol }}</span></h2>
+          <div class="text-muted small mt-1">
+            Phiên gần nhất: <span class="text-white">{{ prediction.latest_candle.date }}</span> | 
+            Giá đóng cửa: <span class="text-white fw-bold">{{ prediction.latest_candle.close_formatted }}</span> 
+            ({{ prediction.latest_candle.price_change_pct }})
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-outline-custom btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            Đổi Thuật Toán
+          </button>
+          <ul class="dropdown-menu dropdown-menu-dark">
+            {% for m_key, m_info in models_list.items() %}
+              <li>
+                <a class="dropdown-item {% if m_key == current_model %}active{% endif %}" 
+                   href="{{ url_for('main.dashboard', symbol=current_symbol, model=m_key) }}">
+                  {{ m_info.name }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- KẾT QUẢ DỰ ĐOÁN CHÍNH -->
+      <div class="text-center my-4">
+        <div class="text-muted text-uppercase small fw-bold tracking-wide mb-2">DỰ ĐOÁN XU HƯỚNG PHIÊN GIAO DỊCH TIẾP THEO</div>
+        {% if prediction.prediction_label == 1 %}
+          <div class="prediction-badge badge-up">
+            <i class="bi {{ prediction.prediction_icon }}"></i> {{ prediction.prediction_text }}
+          </div>
+        {% else %}
+          <div class="prediction-badge badge-down">
+            <i class="bi {{ prediction.prediction_icon }}"></i> {{ prediction.prediction_text }}
+          </div>
+        {% endif %}
+        <div class="text-muted small mt-2">
+          (Dự đoán: Giá ngày mai cao hơn hôm nay &rarr; TĂNG, ngược lại là GIẢM)
+        </div>
+      </div>
+
+      <!-- THANH XÁC SUẤT (PROBABILITY GAUGE) -->
+      <div class="prob-meter-wrapper mb-4">
+        <div class="d-flex justify-content-between text-muted small fw-bold mb-1">
+          <span class="text-success"><i class="bi bi-caret-up-fill"></i> Khả năng TĂNG: {{ prediction.prob_up }}%</span>
+          <span class="text-danger">Khả năng GIẢM: {{ prediction.prob_down }}% <i class="bi bi-caret-down-fill"></i></span>
+        </div>
+        <div class="prob-bar-container">
+          <div class="prob-bar-up" style="width: {{ prediction.prob_up }}%;"></div>
+          <div class="prob-bar-down" style="width: {{ prediction.prob_down }}%;"></div>
+        </div>
+        <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+          <span>Độ tin cậy dự báo: <strong class="text-white">{{ prediction.confidence }}%</strong></span>
+          <span>Độ chính xác trên tập kiểm tra: <strong class="text-info">{{ prediction.test_accuracy }}%</strong></span>
+        </div>
+      </div>
+
+      <!-- CÁC CHỈ SỐ ĐÁNH GIÁ MÔ HÌNH TRÊN TẬP TEST (CHƯƠNG 7 BÀI GIẢNG) -->
+      <div class="row g-2 text-center">
+        <div class="col-3">
+          <div class="p-2 rounded bg-dark border border-secondary">
+            <div class="text-muted" style="font-size: 0.68rem;">ĐỘ CHÍNH XÁC (ACC)</div>
+            <div class="fw-bold text-white fs-6">{{ prediction.test_accuracy }}%</div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="p-2 rounded bg-dark border border-secondary">
+            <div class="text-muted" style="font-size: 0.68rem;">ĐỘ CHUẨN (PREC)</div>
+            <div class="fw-bold text-info fs-6">{{ prediction.test_precision }}%</div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="p-2 rounded bg-dark border border-secondary">
+            <div class="text-muted" style="font-size: 0.68rem;">ĐỘ BẮT TRÚNG (REC)</div>
+            <div class="fw-bold text-warning fs-6">{{ prediction.test_recall }}%</div>
+          </div>
+        </div>
+        <div class="col-3">
+          <div class="p-2 rounded bg-dark border border-secondary">
+            <div class="text-muted" style="font-size: 0.68rem;">ĐIỂM CÂN BẰNG (F1)</div>
+            <div class="fw-bold text-success fs-6">{{ prediction.test_f1 }}%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DISCLAIMER BANNER -->
+      <div class="disclaimer-banner mt-3">
+        <i class="bi bi-shield-exclamation fs-5"></i>
+        <div><strong>Khuyến cáo học thuật:</strong> {{ disclaimer }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CỘT PHẢI: TRẠNG THÁI CÁC CHỈ SỐ KỸ THUẬT QUAN TRỌNG -->
+  <div class="col-lg-5">
+    <div class="glass-card h-100 d-flex flex-column justify-content-between">
+      <div>
+        <div class="card-title-custom">
+          <i class="bi bi-activity"></i> Tín Hiệu Kỹ Thuật Đóng Vai Trò Đầu Vào
+        </div>
+
+        <div class="d-flex flex-column gap-3">
+          <!-- RSI -->
+          <div class="metric-pill">
+            <div>
+              <div class="metric-pill-label">1. Sức Mạnh Giá (RSI 14)</div>
+              <div class="metric-pill-value text-white">{{ prediction.key_indicators.rsi_14 }}</div>
+            </div>
+            <div>
+              <span class="badge bg-secondary-subtle text-white px-3 py-2">
+                {{ prediction.key_indicators.rsi_status }}
+              </span>
+            </div>
+          </div>
+
+          <!-- MACD -->
+          <div class="metric-pill">
+            <div>
+              <div class="metric-pill-label">2. Chỉ Báo Xu Hướng (MACD)</div>
+              <div class="metric-pill-value text-white">{{ prediction.key_indicators.macd }}</div>
+              <div class="text-muted small" style="font-size:0.7rem;">Signal: {{ prediction.key_indicators.macd_signal }}</div>
+            </div>
+            <div>
+              <span class="badge bg-secondary-subtle text-white px-3 py-2">
+                {{ prediction.key_indicators.macd_status }}
+              </span>
+            </div>
+          </div>
+
+          <!-- SMA 20 -->
+          <div class="metric-pill">
+            <div>
+              <div class="metric-pill-label">3. Đường Trung Bình 20 Ngày (SMA20)</div>
+              <div class="metric-pill-value text-white">{{ prediction.key_indicators.sma_20 }}</div>
+            </div>
+            <div>
+              <span class="badge bg-secondary-subtle text-white px-3 py-2">
+                {{ prediction.key_indicators.trend_vs_sma20 }}
+              </span>
+            </div>
+          </div>
+
+          <!-- KHỐI LƯỢNG -->
+          <div class="metric-pill">
+            <div>
+              <div class="metric-pill-label">4. Khối Lượng Khớp Lệnh</div>
+              <div class="metric-pill-value text-white">{{ prediction.latest_candle.volume_formatted }} CP</div>
+            </div>
+            <div>
+              <span class="badge bg-dark border border-secondary text-info px-3 py-2">
+                <i class="bi bi-bar-chart-fill me-1"></i> Thanh khoản sàn HOSE
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <a href="{{ url_for('main.prediction', symbol=current_symbol, model=current_model) }}" class="btn btn-primary-custom flex-fill text-center">
+          <i class="bi bi-sliders me-1"></i> Thử Nghiệm Kịch Bản Giả Định
+        </a>
+        <a href="{{ url_for('main.comparison', symbol=current_symbol) }}" class="btn btn-outline-custom flex-fill text-center">
+          <i class="bi bi-table me-1"></i> So Sánh 4 Thuật Toán
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BIỂU ĐỒ NẾN TRỰC QUAN TƯƠNG TÁC -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="card-title-custom mb-0">
+          <i class="bi bi-graph-up text-success"></i> Biểu Đồ Nến Giá Lịch Sử & Khối Lượng - {{ current_symbol }}
+        </div>
+        <div class="text-muted small">
+          Nguồn dữ liệu: <span class="badge bg-dark border border-secondary text-warning">{{ prediction.data_source }}</span>
+        </div>
+      </div>
+      
+      <div id="dashboardCandleChart" class="chart-box"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderHistoricalCandlestickChart('dashboardCandleChart', '{{ current_symbol }}');
+});
+</script>
+{% endblock %}

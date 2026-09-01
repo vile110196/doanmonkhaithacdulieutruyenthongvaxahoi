@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Gom Nhóm Cổ Phiếu K-Means | Thị Trường HOSE{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-diagram-3 text-warning me-2"></i>Phân Nhóm Cổ Phiếu Bằng Thuật Toán K-Means (Bài 6)</h3>
+    <div class="text-muted small">Tự động gom nhóm các cổ phiếu trên sàn HOSE dựa trên 2 đặc tính cốt lõi: <strong>Mức Sinh Lời (Lợi Suất)</strong> và <strong>Độ Rủi Ro (Biến Động Giá)</strong>.</div>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="text-muted small">Chọn số nhóm (k):</span>
+    <div class="btn-group" role="group">
+      {% for k in [2, 3, 4, 5] %}
+        <a href="{{ url_for('main.clustering', k=k) }}" class="btn btn-sm {% if k == current_k %}btn-primary-custom{% else %}btn-outline-custom{% endif %}">
+          {{ k }} Nhóm
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ĐẶC ĐIỂM CỦA TỪNG NHÓM CỔ PHIẾU -->
+<div class="row g-4 mb-4">
+  {% for prof in results.cluster_profiles %}
+  <div class="col-md-4">
+    <div class="glass-card h-100 border-top border-3 border-{{ prof.badge_color }}">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <h6 class="fw-bold text-white mb-0">{{ prof.cluster_name }}</h6>
+        <span class="badge bg-{{ prof.badge_color }} text-dark fw-bold">{{ prof.stock_count }} Cổ Phiếu</span>
+      </div>
+      <p class="text-muted small mb-3">{{ prof.description }}</p>
+
+      <div class="d-flex flex-wrap gap-1 mb-3">
+        {% for s in prof.stocks %}
+          <span class="badge bg-dark border border-secondary text-warning">{{ s }}</span>
+        {% endfor %}
+      </div>
+
+      <div class="p-2 rounded bg-dark border border-secondary text-muted small">
+        <div class="d-flex justify-content-between">
+          <span>Lợi suất bình quân năm:</span>
+          <strong class="text-white">{{ prof.avg_return }}%</strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span>Độ rủi ro / biến động:</span>
+          <strong class="text-white">{{ prof.avg_volatility }}%</strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span>Chỉ số RSI trung bình:</span>
+          <strong class="text-white">{{ prof.avg_rsi }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- BIỂU ĐỒ 2D VÀ BIỂU ĐỒ ELBOW -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-scatter-chart text-cyan"></i> Biểu Đồ Tương Quan: Lợi Suất (%) vs Mức Độ Rủi Ro (%)
+      </div>
+      <p class="text-muted small">Mỗi chấm tròn đại diện cho 1 mã cổ phiếu. Dấu X trắng đại diện cho Tâm Nhóm (Centroid) đại diện cho nhóm đó.</p>
+      <div id="cluster2dChart" style="height: 400px;"></div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-activity text-warning"></i> Phương Pháp Khuỷu Tay (Elbow Method)
+      </div>
+      <p class="text-muted small">
+        Biểu đồ thể hiện mức độ phân tán giảm dần khi tăng số nhóm $k$. Vị trí điểm gấp khúc (Khuỷu tay) đẹp nhất là <strong>k = 3 nhóm</strong>.
+      </p>
+      <div id="elbowChart" style="height: 280px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BẢNG CHI TIẾT TỌA ĐỘ CÁC MÃ -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-table"></i> Bảng Tổng Hợp Chi Tiết Các Cổ Phiếu
+      </div>
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Mã Cổ Phiếu</th>
+              <th>Nhóm Phân Loại</th>
+              <th class="text-end">Giá Đóng Cửa Gần Nhất</th>
+              <th class="text-end">Lợi Suất Năm (%)</th>
+              <th class="text-end">Mức Rủi Ro Biến Động (%)</th>
+              <th class="text-end">Khối Lượng Khớp Lệnh TB</th>
+              <th class="text-end">RSI Bình Quân</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in results.stocks_data %}
+            <tr>
+              <td class="fw-bold text-white fs-6">
+                <a href="{{ url_for('main.dashboard', symbol=item.symbol) }}" class="text-warning text-decoration-none">
+                  {{ item.symbol }}
+                </a>
+              </td>
+              <td>
+                <span class="badge bg-dark border border-secondary text-info">{{ item.cluster_name }}</span>
+              </td>
+              <td class="text-end">{{ item.latest_price | vnd }}</td>
+              <td class="text-end fw-bold {% if item.annual_return > 0 %}text-success{% else %}text-danger{% endif %}">{{ item.annual_return }}%</td>
+              <td class="text-end text-white">{{ item.annual_volatility }}%</td>
+              <td class="text-end text-muted">{{ "{:,.0f}".format(item.avg_volume) }}</td>
+              <td class="text-end text-white">{{ item.avg_rsi }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const stocks = {{ results.stocks_data | tojson }};
+  const centroids = {{ results.centroids | tojson }};
+  const elbow = {{ results.elbow_points | tojson }};
+
+  // 1. Biểu đồ 2D Phân cụm
+  const clusterColors = ['#10b981', '#6366f1', '#f59e0b', '#06b6d4', '#ec4899'];
+  const traces = [];
+
+  const clustersMap = {};
+  stocks.forEach(s => {
+    if (!clustersMap[s.cluster]) clustersMap[s.cluster] = [];
+    clustersMap[s.cluster].push(s);
+  });
+
+  for (const [cId, sList] of Object.entries(clustersMap)) {
+    traces.push({
+      x: sList.map(s => s.annual_volatility),
+      y: sList.map(s => s.annual_return),
+      text: sList.map(s => `<b>${s.symbol}</b><br>Lợi suất: ${s.annual_return}%<br>Rủi ro: ${s.annual_volatility}%`),
+      mode: 'markers+text',
+      textposition: 'top center',
+      name: `Nhóm ${parseInt(cId) + 1}`,
+      marker: {
+        size: 14,
+        color: clusterColors[cId % clusterColors.length],
+        line: { color: '#ffffff', width: 1 }
+      }
+    });
+  }
+
+  // Thêm Centroids
+  traces.push({
+    x: centroids.map(c => c.annual_volatility),
+    y: centroids.map(c => c.annual_return),
+    text: centroids.map((c, i) => `Tâm Nhóm ${i+1}`),
+    mode: 'markers',
+    name: 'Tâm Nhóm (Centroid)',
+    marker: {
+      size: 18,
+      symbol: 'x',
+      color: '#ffffff',
+      line: { width: 3 }
+    }
+  });
+
+  const layout2D = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 20, r: 20, l: 50, b: 50 },
+    font: { family: 'Plus Jakarta Sans', color: '#94a3b8' },
+    xaxis: { title: 'Mức Độ Biến Động / Rủi Ro Năm (%)', gridcolor: 'rgba(255,255,255,0.05)' },
+    yaxis: { title: 'Mức Sinh Lời / Lợi Suất Năm (%)', gridcolor: 'rgba(255,255,255,0.05)' }
+  };
+  Plotly.newPlot('cluster2dChart', traces, layout2D, { responsive: true, displayModeBar: false });
+
+  // 2. Biểu đồ Elbow
+  const traceElbow = {
+    x: elbow.map(e => e.k),
+    y: elbow.map(e => e.inertia),
+    mode: 'lines+markers',
+    name: 'Tổng Sai Số (SSE)',
+    line: { color: '#f59e0b', width: 2.5 },
+    marker: { size: 8, color: '#f59e0b' }
+  };
+  const layoutElbow = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 20, r: 20, l: 50, b: 40 },
+    font: { family: 'Plus Jakarta Sans', color: '#94a3b8' },
+    xaxis: { title: 'Số Nhóm (k)', gridcolor: 'rgba(255,255,255,0.05)', dtick: 1 },
+    yaxis: { title: 'Tổng Sai Số (SSE)', gridcolor: 'rgba(255,255,255,0.05)' }
+  };
+  Plotly.newPlot('elbowChart', [traceElbow], layoutElbow, { responsive: true, displayModeBar: false });
+});
+</script>
+{% endblock %}

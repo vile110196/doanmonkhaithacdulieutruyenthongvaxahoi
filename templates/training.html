@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Huấn Luyện Mô Hình Phân Lớp | {{ current_symbol }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-cpu text-primary me-2"></i>Không Gian Huấn Luyện & Đánh Giá Mô Hình</h3>
+    <div class="text-muted small">Chia dữ liệu theo thứ tự thời gian (70% học, 30% kiểm tra), huấn luyện các thuật toán và kiểm tra độ chính xác thực tế.</div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- CỘT TRÁI: THIẾT LẬP VÀ ĐIỀU KHIỂN -->
+  <div class="col-lg-4">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-gear-fill"></i> Thiết Lập Huấn Luyện
+      </div>
+
+      <form id="trainForm" onsubmit="event.preventDefault(); submitTrainModel();">
+        <div class="mb-3">
+          <label class="form-label text-white small fw-bold">1. Chọn Mã Cổ Phiếu:</label>
+          <select id="trainSymbol" class="form-select bg-dark text-white border-secondary">
+            {% for s in symbols %}
+              <option value="{{ s }}" {% if s == current_symbol %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label text-white small fw-bold">2. Chọn Thuật Toán Cần Học:</label>
+          <select id="trainModelType" class="form-select bg-dark text-white border-secondary" onchange="updateHyperparamInputs(this.value)">
+            {% for m_key, m_info in models_list.items() %}
+              <option value="{{ m_key }}">{{ m_info.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <div class="d-flex justify-content-between text-muted small fw-bold mb-1">
+            <span>3. Tỷ Lệ Chia Dữ Liệu (Học / Kiểm Tra):</span>
+            <span id="trainRatioLabel" class="text-primary fw-bold">70% Học / 30% Kiểm Tra</span>
+          </div>
+          <input type="range" class="form-range" id="trainRatio" min="50" max="85" step="5" value="70" 
+                 oninput="document.getElementById('trainRatioLabel').innerText = this.value + '% Học / ' + (100 - this.value) + '% Kiểm Tra'">
+          <div class="text-muted" style="font-size: 0.72rem;">
+            <i class="bi bi-shield-check text-success me-1"></i> <strong>Cam kết chống rò rỉ:</strong> Lấy các năm quá khứ để học, lấy các năm gần nhất để kiểm tra.
+          </div>
+        </div>
+
+        <!-- THAM SỐ TÙY CHỈNH THEO TỪNG THUẬT TOÁN -->
+        <div id="hyperparamsContainer" class="p-3 rounded bg-dark border border-secondary mb-3">
+          <div class="text-white small fw-bold mb-2"><i class="bi bi-sliders me-1 text-cyan"></i> Tham Số Nâng Cao:</div>
+          
+          <!-- Cây quyết định params -->
+          <div id="params-decision_tree">
+            <div class="mb-2">
+              <label class="text-muted small">Tiêu chuẩn chọn câu hỏi phân nhánh:</label>
+              <select id="dtCriterion" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="gini">Chỉ số Gini (Đo độ tinh khiết nhóm)</option>
+                <option value="entropy">Độ lợi thông tin Entropy (Bài 5)</option>
+              </select>
+            </div>
+            <div class="mb-2">
+              <label class="text-muted small">Độ sâu tối đa của cây (Max Depth):</label>
+              <input type="number" id="dtMaxDepth" class="form-control form-control-sm bg-dark text-white border-secondary" value="5" min="2" max="15">
+              <div class="text-muted" style="font-size:0.68rem;">Giới hạn độ sâu để tránh cây học vẹt (Overfitting).</div>
+            </div>
+          </div>
+
+          <!-- Naive Bayes params -->
+          <div id="params-naive_bayes" style="display:none;">
+            <div class="mb-2">
+              <label class="text-muted small">Hệ số làm mịn phương sai (Var Smoothing):</label>
+              <input type="number" id="nbVarSmoothing" class="form-control form-control-sm bg-dark text-white border-secondary" value="1e-9" step="1e-10">
+              <div class="text-muted" style="font-size:0.68rem;">Giúp thuật toán tránh lỗi chia cho 0 khi dữ liệu ít biến động.</div>
+            </div>
+          </div>
+
+          <!-- Logistic Regression params -->
+          <div id="params-logistic_regression" style="display:none;">
+            <div class="mb-2">
+              <label class="text-muted small">Hệ số kiểm soát độ phức tạp (C):</label>
+              <input type="number" id="lrC" class="form-control form-control-sm bg-dark text-white border-secondary" value="1.0" step="0.1" min="0.01">
+            </div>
+          </div>
+
+          <!-- Random Forest params -->
+          <div id="params-random_forest" style="display:none;">
+            <div class="mb-2">
+              <label class="text-muted small">Số lượng cây trong rừng (n_estimators):</label>
+              <input type="number" id="rfEstimators" class="form-control form-control-sm bg-dark text-white border-secondary" value="100" min="10" max="300" step="10">
+            </div>
+            <div class="mb-2">
+              <label class="text-muted small">Độ sâu tối đa mỗi cây (max_depth):</label>
+              <input type="number" id="rfMaxDepth" class="form-control form-control-sm bg-dark text-white border-secondary" value="6" min="2" max="15">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="btnTrainSubmit" class="btn btn-primary-custom w-100 py-2 mb-2">
+          <i class="bi bi-play-circle-fill me-1"></i> Bắt Đầu Huấn Luyện
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- CỘT PHẢI: KẾT QUẢ VÀ TRỰC QUAN HÓA -->
+  <div class="col-lg-8">
+    <div id="trainingWelcomeState" class="glass-card text-center py-5">
+      <i class="bi bi-cpu text-primary" style="font-size: 3.5rem;"></i>
+      <h5 class="fw-bold text-white mt-3">Sẵn Sàng Huấn Luyện Thuật Toán</h5>
+      <p class="text-muted small">Bấm nút <strong>Bắt Đầu Huấn Luyện</strong> để hệ thống tiến hành nạp dữ liệu, chuẩn hóa đặc trưng và kiểm thử độ chính xác.</p>
+    </div>
+
+    <div id="trainingLoadingState" class="glass-card text-center py-5" style="display:none;">
+      <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+      <h5 class="fw-bold text-white">Đang Huấn Luyện Thuật Toán...</h5>
+      <p class="text-muted small">Đang chạy thuật toán phân lớp và kiểm tra trên tập dữ liệu kiểm thử độc lập...</p>
+    </div>
+
+    <div id="trainingResultState" style="display:none;">
+      <!-- BẢNG TỔNG HỢP 4 CHỈ SỐ CHÍNH (BÀI 7) -->
+      <div class="glass-card mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 mb-1">
+              <i class="bi bi-check-circle-fill me-1"></i> Đã Hoàn Thành Huấn Luyện
+            </span>
+            <h4 class="fw-bold text-white mb-0" id="resModelName">Random Forest</h4>
+            <div class="text-muted small" id="resSplitInfo">...</div>
+          </div>
+          <a href="{{ url_for('main.comparison', symbol=current_symbol) }}" class="btn btn-outline-custom btn-sm">
+            <i class="bi bi-trophy me-1"></i> Xem Bảng Xếp Hạng Tất Cả Mô Hình
+          </a>
+        </div>
+
+        <div class="row g-2 text-center">
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-dark border border-secondary">
+              <div class="text-muted small text-uppercase">1. ĐỘ CHÍNH XÁC TỔNG (ACCURACY)</div>
+              <div class="fs-4 fw-bold text-white" id="resAcc">--%</div>
+              <div class="text-muted" style="font-size:0.7rem;">Tỷ lệ đoán đúng tất cả các ngày</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-dark border border-secondary">
+              <div class="text-muted small text-uppercase">2. ĐỘ CHUẨN XÁC (PRECISION)</div>
+              <div class="fs-4 fw-bold text-info" id="resPrec">--%</div>
+              <div class="text-muted" style="font-size:0.7rem;">Đoán TĂNG và đúng là TĂNG</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-dark border border-secondary">
+              <div class="text-muted small text-uppercase">3. ĐỘ PHÁT HIỆN (RECALL)</div>
+              <div class="fs-4 fw-bold text-warning" id="resRec">--%</div>
+              <div class="text-muted" style="font-size:0.7rem;">Bắt trúng bao nhiêu ngày TĂNG</div>
+            </div>
+          </div>
+          <div class="col-md-3 col-6">
+            <div class="p-3 rounded bg-dark border border-secondary">
+              <div class="text-muted small text-uppercase">4. ĐIỂM F1-SCORE</div>
+              <div class="fs-4 fw-bold text-success" id="resF1">--%</div>
+              <div class="text-muted" style="font-size:0.7rem;">Điểm cân bằng toàn diện</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MA TRẬN NHẦM LẪN VÀ ĐƯỜNG CONG ROC -->
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <div class="glass-card h-100">
+            <div class="card-title-custom">
+              <i class="bi bi-grid-3x3-gap-fill text-warning"></i> Ma Trận Nhầm Lẫn (Confusion Matrix)
+            </div>
+            <p class="text-muted small mb-2">Bảng tổng kết số phiên đoán đúng và số phiên đoán nhầm:</p>
+            <div id="resCmChart" style="height: 270px;"></div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="glass-card h-100">
+            <div class="card-title-custom">
+              <i class="bi bi-graph-up text-primary"></i> Đường Cong ROC (Khả Năng Phân Biệt)
+            </div>
+            <p class="text-muted small mb-2">Đường cong càng lồi về góc trên bên trái thì mô hình càng tốt:</p>
+            <div id="resRocChart" style="height: 270px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIỄN GIẢI QUY TẮC MÔ HÌNH -->
+      <div class="glass-card">
+        <div class="card-title-custom">
+          <i class="bi bi-lightbulb-fill text-cyan"></i> Giải Thích Cách Thuật Toán Học Từ Dữ Liệu
+        </div>
+        <div id="resExplanationContent" class="text-muted small"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateHyperparamInputs(modelType) {
+  const models = ['decision_tree', 'naive_bayes', 'logistic_regression', 'random_forest'];
+  models.forEach(m => {
+    const el = document.getElementById(`params-${m}`);
+    if (el) el.style.display = (m === modelType) ? 'block' : 'none';
+  });
+}
+
+function submitTrainModel() {
+  const symbol = document.getElementById('trainSymbol').value;
+  const modelType = document.getElementById('trainModelType').value;
+  const trainRatio = parseFloat(document.getElementById('trainRatio').value) / 100.0;
+
+  const params = {};
+  if (modelType === 'decision_tree') {
+    params.criterion = document.getElementById('dtCriterion').value;
+    params.max_depth = document.getElementById('dtMaxDepth').value;
+  } else if (modelType === 'naive_bayes') {
+    params.var_smoothing = document.getElementById('nbVarSmoothing').value;
+  } else if (modelType === 'logistic_regression') {
+    params.C = document.getElementById('lrC').value;
+  } else if (modelType === 'random_forest') {
+    params.n_estimators = document.getElementById('rfEstimators').value;
+    params.max_depth = document.getElementById('rfMaxDepth').value;
+  }
+
+  document.getElementById('trainingWelcomeState').style.display = 'none';
+  document.getElementById('trainingResultState').style.display = 'none';
+  document.getElementById('trainingLoadingState').style.display = 'block';
+
+  fetch('/api/train', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbol, model_type: modelType, train_ratio: trainRatio, params })
+  })
+  .then(res => res.json())
+  .then(res => {
+    document.getElementById('trainingLoadingState').style.display = 'none';
+    if (res.status === 'success') {
+      document.getElementById('trainingResultState').style.display = 'block';
+      document.getElementById('resModelName').innerText = res.model_name;
+      document.getElementById('resSplitInfo').innerText = `Tập Học (Train): ${res.split_info.train_samples} ngày (${res.split_info.train_period}) | Tập Kiểm Tra (Test): ${res.split_info.test_samples} ngày (${res.split_info.test_period})`;
+      document.getElementById('resAcc').innerText = res.metrics.accuracy + '%';
+      document.getElementById('resPrec').innerText = res.metrics.precision + '%';
+      document.getElementById('resRec').innerText = res.metrics.recall + '%';
+      document.getElementById('resF1').innerText = res.metrics.f1_score + '%';
+
+      renderConfusionMatrix('resCmChart', res.metrics.confusion_matrix);
+      renderRocCurve('resRocChart', res.metrics.roc_curve, res.model_name);
+
+      let explHtml = '';
+      if (modelType === 'decision_tree') {
+        explHtml = `<p>Cây quyết định học được <strong>${res.explanation.n_leaves}</strong> trường hợp quyết định với độ sâu <strong>${res.explanation.tree_depth}</strong> tầng. Các luật rẽ nhánh dạng <strong>NẾU... THÌ...</strong> chính:</p><pre class="theory-math-box p-2">${res.explanation.tree_rules_text}</pre>`;
+      } else if (modelType === 'naive_bayes') {
+        explHtml = `<p>Thuật toán tính giá trị trung bình và độ biến động của các chỉ số trong các ngày TĂNG và ngày GIẢM:</p><div class="table-responsive"><table class="table-custom"><thead><tr><th>Chỉ Số</th><th>Giá trị TB Ngày GIẢM</th><th>Giá trị TB Ngày TĂNG</th><th>Độ Phân Tán (GIẢM)</th><th>Độ Phân Tán (TĂNG)</th></tr></thead><tbody>`;
+        res.explanation.gaussian_parameters.forEach(p => {
+          explHtml += `<tr><td>${p.feature}</td><td>${p.mean_down}</td><td>${p.mean_up}</td><td>${p.var_down}</td><td>${p.var_up}</td></tr>`;
+        });
+        explHtml += `</tbody></table></div>`;
+      } else if (modelType === 'logistic_regression') {
+        explHtml = `<p>Trọng số đóng góp của từng chỉ số vào khả năng TĂNG GIÁ (Hệ số bias = <strong>${res.explanation.intercept}</strong>):</p><div class="table-responsive"><table class="table-custom"><thead><tr><th>Chỉ Số</th><th>Trọng Số Tác Động</th><th>Ý Nghĩa Tác Động</th></tr></thead><tbody>`;
+        res.explanation.weights.slice(0, 6).forEach(w => {
+          explHtml += `<tr><td>${w.feature}</td><td class="fw-bold ${w.weight > 0 ? 'text-success':'text-danger'}">${w.weight}</td><td>${w.impact}</td></tr>`;
+        });
+        explHtml += `</tbody></table></div>`;
+      } else if (modelType === 'random_forest') {
+        explHtml = `<p>Rừng ngẫu nhiên lấy ý kiến biểu quyết từ <strong>${res.explanation.n_estimators}</strong> cây quyết định. Các chỉ số có mức độ quan trọng cao nhất:</p><div class="table-responsive"><table class="table-custom"><thead><tr><th>Hạng</th><th>Tên Chỉ Số</th><th>Mức Độ Quan Trọng (%)</th></tr></thead><tbody>`;
+        res.explanation.feature_importances.slice(0, 6).forEach((f, idx) => {
+          explHtml += `<tr><td>${idx+1}</td><td>${f.feature}</td><td class="fw-bold text-warning">${f.importance_pct}%</td></tr>`;
+        });
+        explHtml += `</tbody></table></div>`;
+      }
+      document.getElementById('resExplanationContent').innerHTML = explHtml;
+    } else {
+      alert("Lỗi khi huấn luyện: " + res.message);
+    }
+  })
+  .catch(err => {
+    document.getElementById('trainingLoadingState').style.display = 'none';
+    alert("Lỗi kết nối máy chủ: " + err);
+  });
+}
+</script>
+{% endblock %}

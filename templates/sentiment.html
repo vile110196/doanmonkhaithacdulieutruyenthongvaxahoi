@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Khai Thác Truyền Thông Xã Hội | {{ current_symbol }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-chat-heart text-danger me-2"></i>Khai Thác Dữ Liệu Truyền Thông Xã Hội (Social Media Sentiment)</h3>
+    <div class="text-muted small">Phân tích cảm xúc bài đăng, diễn đàn F319, FireAnt và đo lường tương quan với đường giá cổ phiếu {{ current_symbol }}.</div>
+  </div>
+  <div>
+    <button class="btn btn-outline-custom btn-sm" data-bs-toggle="modal" data-bs-target="#uploadSocialModal">
+      <i class="bi bi-cloud-arrow-up me-1"></i> Tải Lên CSV Bình Luận
+    </button>
+  </div>
+</div>
+
+<!-- TỔNG HỢP CHỈ SỐ CẢM XÚC -->
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">Tổng số bình luận thu thập</div>
+      <div class="fs-3 fw-bold text-white mt-1">{{ sentiment.total_comments }}</div>
+      <div class="text-muted" style="font-size:0.75rem;">F319, FireAnt, Facebook Groups</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">Tích Cực (Positive)</div>
+      <div class="fs-3 fw-bold text-success mt-1">{{ sentiment.positive_pct }}%</div>
+      <div class="text-muted" style="font-size:0.75rem;">{{ sentiment.positive_count }} bình luận lạc quan</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">Trung Lập (Neutral)</div>
+      <div class="fs-3 fw-bold text-info mt-1">{{ sentiment.neutral_pct }}%</div>
+      <div class="text-muted" style="font-size:0.75rem;">{{ sentiment.neutral_count }} bình luận kỹ thuật</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">Tiêu Cực (Negative)</div>
+      <div class="fs-3 fw-bold text-danger mt-1">{{ sentiment.negative_pct }}%</div>
+      <div class="text-muted" style="font-size:0.75rem;">{{ sentiment.negative_count }} bình luận cảnh báo</div>
+    </div>
+  </div>
+</div>
+
+<!-- BIỂU ĐỒ TƯƠNG QUAN GIÁ & CẢM XÚC -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-graph-up-arrow text-primary"></i> Biểu Đồ Đối Sánh: Giá Cổ Phiếu vs Chỉ Số Tâm Lý Nhà Đầu Tư (Sentiment Score)
+      </div>
+      <div id="sentimentPriceChart" style="height: 400px;"></div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-pie-chart-fill text-warning"></i> Phân Bổ Cảm Xúc Cộng Đồng
+      </div>
+      <div id="sentimentDonutChart" style="height: 320px;"></div>
+      <div class="text-center text-muted small mt-2">
+        Trạng thái chung: <strong class="text-white">{{ sentiment.sentiment_label }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MẪU BÌNH LUẬN GẦN NHẤT -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-chat-left-text"></i> Dòng Bình Luận Gần Nhất (Social Stream Feed)
+      </div>
+      <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Kênh</th>
+              <th>Người Dùng</th>
+              <th>Nội Dung Bình Luận</th>
+              <th>Nhãn Cảm Xúc</th>
+              <th class="text-end">Điểm Số</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in sentiment.recent_comments %}
+            <tr>
+              <td class="text-muted small">{{ c.Date }}</td>
+              <td><span class="badge bg-dark border border-secondary text-info">{{ c.Channel }}</span></td>
+              <td class="text-white small fw-bold">{{ c.Author }}</td>
+              <td class="text-muted small">{{ c.Content }}</td>
+              <td>
+                {% if c.Sentiment == 'Positive' %}
+                  <span class="badge bg-success-subtle text-success">Tích Cực</span>
+                {% elif c.Sentiment == 'Negative' %}
+                  <span class="badge bg-danger-subtle text-danger">Tiêu Cực</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-muted">Trung Lập</span>
+                {% endif %}
+              </td>
+              <td class="text-end fw-bold {% if c.SentimentScore > 0 %}text-success{% elif c.SentimentScore < 0 %}text-danger{% else %}text-muted{% endif %}">
+                {{ c.SentimentScore }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UPLOAD SOCIAL CSV -->
+<div class="modal fade" id="uploadSocialModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass-card" style="background: #1e293b; border-color: rgba(255,255,255,0.15);">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title"><i class="bi bi-cloud-arrow-up me-2 text-danger"></i>Tải Lên Dữ Liệu Bình Luận</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="{{ url_for('main.api_upload_social_csv') }}" method="POST" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p class="text-muted small">Tải lên file CSV chứa các cột: <code>Date, StockCode, Content</code> (hoặc <code>Date, Content, Sentiment</code>).</p>
+          <input type="hidden" name="symbol" value="{{ current_symbol }}">
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Chọn file CSV bình luận:</label>
+            <input type="file" name="file" class="form-control bg-dark text-white border-secondary" accept=".csv" required>
+          </div>
+        </div>
+        <div class="modal-footer border-top border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary-custom">Nạp Bình Luận</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const sentiment = {{ sentiment | tojson }};
+  const timeline = sentiment.timeline_data;
+
+  // 1. Biểu đồ Donut
+  const donutData = [{
+    values: [sentiment.positive_count, sentiment.neutral_count, sentiment.negative_count],
+    labels: ['Tích Cực', 'Trung Lập', 'Tiêu Cực'],
+    type: 'pie',
+    hole: 0.6,
+    marker: { colors: ['#10b981', '#64748b', '#ef4444'] },
+    textinfo: 'percent+label',
+    font: { family: 'Plus Jakarta Sans', color: '#ffffff' }
+  }];
+  const donutLayout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 10, r: 10, l: 10, b: 10 },
+    showlegend: false
+  };
+  Plotly.newPlot('sentimentDonutChart', donutData, donutLayout, { responsive: true, displayModeBar: false });
+
+  // 2. Biểu đồ Timeline Price vs Sentiment Score
+  const dates = timeline.map(r => r.Date);
+  const prices = timeline.map(r => r.Close);
+  const scores = timeline.map(r => r.avg_sentiment);
+
+  const tracePrice = {
+    x: dates,
+    y: prices,
+    name: 'Giá Đóng Cửa (VNĐ)',
+    type: 'scatter',
+    mode: 'lines',
+    line: { color: '#ffffff', width: 2 },
+    yaxis: 'y1'
+  };
+
+  const traceScore = {
+    x: dates,
+    y: scores,
+    name: 'Điểm Tâm Lý (-1 đến +1)',
+    type: 'bar',
+    marker: {
+      color: scores.map(s => s >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)')
+    },
+    yaxis: 'y2'
+  };
+
+  const timelineLayout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 20, r: 50, l: 50, b: 40 },
+    font: { family: 'Plus Jakarta Sans', color: '#94a3b8' },
+    legend: { orientation: 'h', y: 1.15 },
+    xaxis: { gridcolor: 'rgba(255,255,255,0.05)' },
+    yaxis: { title: 'Giá Cổ Phiếu', gridcolor: 'rgba(255,255,255,0.05)' },
+    yaxis2: {
+      title: 'Chỉ Số Tâm Lý',
+      overlaying: 'y',
+      side: 'right',
+      range: [-1.2, 1.2],
+      showgrid: false
+    }
+  };
+  Plotly.newPlot('sentimentPriceChart', [tracePrice, traceScore], timelineLayout, { responsive: true, displayModeBar: false });
+});
+</script>
+{% endblock %}

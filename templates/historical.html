@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Dữ Liệu Lịch Sử (OHLCV) | {{ current_symbol }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-calendar3-range text-primary me-2"></i>Dữ Liệu Lịch Sử Cổ Phiếu {{ current_symbol }}</h3>
+    <div class="text-muted small">Quy trình tiền xử lý KDD: Làm sạch dữ liệu, kiểm tra trùng lặp và loại bỏ ngoại lai.</div>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-custom" data-bs-toggle="modal" data-bs-target="#uploadCsvModal">
+      <i class="bi bi-cloud-arrow-up me-1"></i> Tải Lên CSV
+    </button>
+  </div>
+</div>
+
+<!-- THỐNG KÊ TIỀN XỬ LÝ (CHƯƠNG 1 BÀI GIẢNG) -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="glass-card p-3 text-center">
+      <div class="text-muted small text-uppercase">Tổng số phiên giao dịch</div>
+      <div class="fs-4 fw-bold text-white mt-1">{{ total_rows }}</div>
+      <div class="text-muted" style="font-size:0.75rem;">Từ {{ stats.start_date }} đến {{ stats.end_date }}</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card p-3 text-center">
+      <div class="text-muted small text-uppercase">Bản ghi trùng lặp đã lọc</div>
+      <div class="fs-4 fw-bold text-success mt-1">{{ stats.duplicates_removed }}</div>
+      <div class="text-muted" style="font-size:0.75rem;">Loại bỏ theo khóa Date</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card p-3 text-center">
+      <div class="text-muted small text-uppercase">Dữ liệu lỗi / không hợp lệ</div>
+      <div class="fs-4 fw-bold text-info mt-1">{{ stats.invalid_rows_removed }}</div>
+      <div class="text-muted" style="font-size:0.75rem;">Giá & Volume &le; 0</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card p-3 text-center">
+      <div class="text-muted small text-uppercase">Nguồn dữ liệu hiện tại</div>
+      <div class="fs-6 fw-bold text-warning mt-2">{{ data_source }}</div>
+      <div class="text-muted" style="font-size:0.75rem;">Độ tin cậy: Chuẩn sàn HOSE</div>
+    </div>
+  </div>
+</div>
+
+<!-- BIỂU ĐỒ NẾN TOÀN MÀN HÌNH -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-graph-up"></i> Biểu Đồ Kỹ Thuật Candlestick & Khối Lượng
+      </div>
+      <div id="historicalChart" class="chart-box" style="height: 480px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BẢNG DỮ LIỆU LỊCH SỬ -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="card-title-custom mb-0">
+          <i class="bi bi-table"></i> Bảng Dữ Liệu Lịch Sử (100 Phiên Gần Nhất)
+        </div>
+        <span class="badge bg-secondary-subtle text-muted">Hiển thị 100 / {{ total_rows }} bản ghi</span>
+      </div>
+
+      <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Mã</th>
+              <th class="text-end">Mở Cửa</th>
+              <th class="text-end">Cao Nhất</th>
+              <th class="text-end">Thấp Nhất</th>
+              <th class="text-end">Đóng Cửa</th>
+              <th class="text-end">Khối Lượng</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in table_data %}
+            <tr>
+              <td class="fw-bold text-white">{{ row.Date }}</td>
+              <td><span class="badge bg-dark border border-secondary text-warning">{{ row.Symbol }}</span></td>
+              <td class="text-end">{{ row.Open | vnd }}</td>
+              <td class="text-end text-success">{{ row.High | vnd }}</td>
+              <td class="text-end text-danger">{{ row.Low | vnd }}</td>
+              <td class="text-end fw-bold text-white">{{ row.Close | vnd }}</td>
+              <td class="text-end text-muted">{{ "{:,.0f}".format(row.Volume) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderHistoricalCandlestickChart('historicalChart', '{{ current_symbol }}');
+});
+</script>
+{% endblock %}

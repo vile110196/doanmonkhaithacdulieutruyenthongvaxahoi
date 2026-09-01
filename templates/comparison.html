@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}So Sánh 4 Thuật Toán Phân Lớp | {{ current_symbol }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-bar-chart-line text-warning me-2"></i>Bảng So Sánh Hiệu Suất 4 Thuật Toán Phân Lớp</h3>
+    <div class="text-muted small">Kiểm tra độc lập trên tập dữ liệu kiểm thử (Test Set: {{ test_samples }} ngày giao dịch gần nhất). Tự động tìm ra Mô Hình Tốt Nhất theo điểm F1-Score.</div>
+  </div>
+  <a href="{{ url_for('main.training', symbol=current_symbol) }}" class="btn btn-outline-custom btn-sm">
+    <i class="bi bi-gear-fill me-1"></i> Tùy Chỉnh Huấn Luyện Lại
+  </a>
+</div>
+
+<!-- BẢNG XẾP HẠNG LEADERBOARD -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="card-title-custom mb-0">
+          <i class="bi bi-trophy-fill text-warning"></i> Bảng Xếp Hạng Hiệu Năng Các Thuật Toán (Leaderboard)
+        </div>
+        <span class="badge bg-success-subtle text-success px-3 py-2 fs-6">
+          <i class="bi bi-crown-fill text-warning me-1"></i> Mô Hình Tốt Nhất: {{ comparison.best_model_name }}
+        </span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Tên Thuật Toán</th>
+              <th class="text-end">1. Độ Chính Xác (Accuracy)</th>
+              <th class="text-end">2. Độ Chuẩn Báo TĂNG (Precision)</th>
+              <th class="text-end">3. Tỷ Lệ Bắt Trúng TĂNG (Recall)</th>
+              <th class="text-end">4. Điểm Cân Bằng (F1-Score)</th>
+              <th class="text-end">Điểm Phân Biệt (AUC)</th>
+              <th class="text-center">Chi Tiết 4 Trường Hợp [TP / FP / TN / FN]</th>
+              <th class="text-center">Đánh Giá Chung</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in comparison.leaderboard %}
+            <tr {% if row.is_best %}style="background: rgba(99, 102, 241, 0.12); border-left: 4px solid #f59e0b;"{% endif %}>
+              <td class="fw-bold text-white">
+                {% if row.is_best %}
+                  <span class="badge badge-best-model"><i class="bi bi-crown-fill me-1"></i>#1 BEST</span>
+                {% else %}
+                  <span class="badge bg-dark text-muted">#{{ loop.index }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="fw-bold text-white fs-6">{{ row.model_name }}</span>
+              </td>
+              <td class="text-end fw-bold text-white">{{ row.accuracy }}%</td>
+              <td class="text-end text-info">{{ row.precision }}%</td>
+              <td class="text-end text-warning">{{ row.recall }}%</td>
+              <td class="text-end fw-bold text-success fs-6">{{ row.f1_score }}%</td>
+              <td class="text-end text-white">{{ row.auc_score }}</td>
+              <td class="text-center text-muted small">
+                <span class="badge bg-dark border border-secondary text-success" title="Đoán đúng TĂNG (TP)">Đúng TĂNG: {{ row.tp }}</span>
+                <span class="badge bg-dark border border-secondary text-danger" title="Báo nhầm TĂNG (FP)">Nhầm TĂNG: {{ row.fp }}</span>
+                <span class="badge bg-dark border border-secondary text-info" title="Đoán đúng GIẢM (TN)">Đúng GIẢM: {{ row.tn }}</span>
+                <span class="badge bg-dark border border-secondary text-warning" title="Bỏ sót TĂNG (FN)">Sót TĂNG: {{ row.fn }}</span>
+              </td>
+              <td class="text-center">
+                {% if row.is_best %}
+                  <span class="badge bg-warning text-dark fw-bold">Mô Hình Tối Ưu</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-muted">Mô Hình Tham Chiếu</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BIỂU ĐỒ SO SÁNH TRỰC QUAN -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-bar-chart-fill text-primary"></i> Biểu Đồ Cột So Sánh 4 Chỉ Số Giữa Các Thuật Toán
+      </div>
+      <div id="comparisonBarChart" style="height: 380px;"></div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-bezier2 text-cyan"></i> So Sánh Đường Cong ROC Của 4 Mô Hình
+      </div>
+      <div id="comparisonRocChart" style="height: 380px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GIẢI THÍCH DỄ HIỂU Ý NGHĨA CÁC CHỈ SỐ CHO BẢO VỆ ĐỒ ÁN -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-lightbulb-fill text-warning"></i> Cẩm Nang Diễn Giải Các Chỉ Số Cho Sinh Viên Trả Lời Giảng Viên
+      </div>
+      <div class="row g-3 text-muted small">
+        <div class="col-md-3">
+          <div class="p-3 rounded bg-dark border border-secondary h-100">
+            <h6 class="fw-bold text-white mb-2"><i class="bi bi-check2-circle text-primary me-1"></i> Accuracy (Độ Chính Xác Tổng)</h6>
+            <p class="mb-1"><strong>Ý nghĩa:</strong> Trong 100 ngày giao dịch, mô hình đoán đúng xu hướng bao nhiêu ngày (cả đoán đúng ngày TĂNG lẫn ngày GIẢM).</p>
+            <div class="text-white small">Công thức: <code>(TP + TN) / Tổng số ngày</code></div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 rounded bg-dark border border-secondary h-100">
+            <h6 class="fw-bold text-info mb-2"><i class="bi bi-bullseye me-1"></i> Precision (Độ Chuẩn Xác)</h6>
+            <p class="mb-1"><strong>Ý nghĩa:</strong> Trong những lần mô hình phát tín hiệu <strong>TĂNG</strong>, có bao nhiêu phần trăm thực sự là ngày TĂNG GIÁ.</p>
+            <div class="text-info small">Công thức: <code>TP / (TP + FP)</code></div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 rounded bg-dark border border-secondary h-100">
+            <h6 class="fw-bold text-warning mb-2"><i class="bi bi-search me-1"></i> Recall (Tỷ Lệ Bắt Trúng)</h6>
+            <p class="mb-1"><strong>Ý nghĩa:</strong> Trong tất cả những ngày thị trường thực tế <strong>TĂNG</strong>, mô hình bắt trúng được bao nhiêu cơ hội.</p>
+            <div class="text-warning small">Công thức: <code>TP / (TP + FN)</code></div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="p-3 rounded bg-dark border border-secondary h-100">
+            <h6 class="fw-bold text-success mb-2"><i class="bi bi-award-fill me-1"></i> F1-Score (Điểm Cân Bằng)</h6>
+            <p class="mb-1"><strong>Ý nghĩa:</strong> Điểm số kết hợp hài hòa giữa Precision và Recall. Đây là tiêu chí vàng để chọn ra <strong>Best Model</strong>.</p>
+            <div class="text-success small">Công thức: <code>2 * (P * R) / (P + R)</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const leaderboard = {{ comparison.leaderboard | tojson }};
+  const rocComp = {{ comparison.roc_comparison | tojson }};
+
+  // 1. Biểu đồ cột so sánh
+  const modelNames = leaderboard.map(r => r.model_name.split('(')[0]);
+  const accs = leaderboard.map(r => r.accuracy);
+  const precs = leaderboard.map(r => r.precision);
+  const recs = leaderboard.map(r => r.recall);
+  const f1s = leaderboard.map(r => r.f1_score);
+
+  const traceAcc = { x: modelNames, y: accs, name: 'Độ Chính Xác (Accuracy)', type: 'bar', marker: { color: '#6366f1' } };
+  const tracePrec = { x: modelNames, y: precs, name: 'Độ Chuẩn Báo TĂNG (Precision)', type: 'bar', marker: { color: '#06b6d4' } };
+  const traceRec = { x: modelNames, y: recs, name: 'Tỷ Lệ Bắt Trúng (Recall)', type: 'bar', marker: { color: '#f59e0b' } };
+  const traceF1 = { x: modelNames, y: f1s, name: 'Điểm F1-Score', type: 'bar', marker: { color: '#10b981' } };
+
+  const barLayout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 20, r: 20, l: 40, b: 50 },
+    barmode: 'group',
+    font: { family: 'Plus Jakarta Sans', color: '#94a3b8' },
+    legend: { orientation: 'h', y: 1.15 },
+    xaxis: { gridcolor: 'rgba(255,255,255,0.05)' },
+    yaxis: { title: 'Tỷ Lệ (%)', gridcolor: 'rgba(255,255,255,0.05)', range: [0, 100] }
+  };
+  Plotly.newPlot('comparisonBarChart', [traceAcc, tracePrec, traceRec, traceF1], barLayout, { responsive: true, displayModeBar: false });
+
+  // 2. Biểu đồ ROC đa mô hình
+  const colors = ['#6366f1', '#10b981', '#f59e0b', '#06b6d4'];
+  const rocTraces = [];
+  let cIdx = 0;
+  for (const [mKey, mData] of Object.entries(rocComp)) {
+    rocTraces.push({
+      x: mData.fpr,
+      y: mData.tpr,
+      mode: 'lines',
+      name: `${mData.name.split('(')[0]} (AUC: ${mData.auc})`,
+      line: { color: colors[cIdx % colors.length], width: 2.5 }
+    });
+    cIdx++;
+  }
+  rocTraces.push({
+    x: [0, 1],
+    y: [0, 1],
+    mode: 'lines',
+    name: 'Đoán ngẫu nhiên (AUC = 0.50)',
+    line: { color: '#64748b', dash: 'dash', width: 1.5 }
+  });
+
+  const rocLayout = {
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    margin: { t: 20, r: 20, l: 45, b: 45 },
+    font: { family: 'Plus Jakarta Sans', color: '#94a3b8' },
+    legend: { orientation: 'h', y: -0.2 },
+    xaxis: { title: 'Tỷ Lệ Báo Nhầm (FPR)', gridcolor: 'rgba(255,255,255,0.05)', range: [0, 1] },
+    yaxis: { title: 'Tỷ Lệ Bắt Trúng (TPR)', gridcolor: 'rgba(255,255,255,0.05)', range: [0, 1] }
+  };
+  Plotly.newPlot('comparisonRocChart', rocTraces, rocLayout, { responsive: true, displayModeBar: false });
+});
+</script>
+{% endblock %}

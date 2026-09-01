@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Cơ Sở Lý Thuyết & Hướng Dẫn Bảo Vệ Đồ Án{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-mortarboard-fill text-warning me-2"></i>Cơ Sở Lý Thuyết Bài Giảng & Cẩm Nang Bảo Vệ Đồ Án</h3>
+    <div class="text-muted small">Tài liệu tham chiếu chuẩn xác bám sát 100% các slide bài giảng môn Khai thác dữ liệu và truyền thông xã hội.</div>
+  </div>
+</div>
+
+<!-- NỘI DUNG LÝ THUYẾT THEO TỪNG CHUYÊN ĐỀ BÀI GIẢNG -->
+<div class="row g-4 mb-4">
+  <!-- CHUYÊN ĐỀ 1: TIỀN XỬ LÝ DỮ LIỆU (BÀI 1 & 2) -->
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-primary text-white fs-6">Bài 1 & 2</span>
+        <h5 class="fw-bold text-white mb-0">Tiền Xử Lý Dữ Liệu (Data Preprocessing)</h5>
+      </div>
+      <p class="text-muted small">
+        Quy trình khám phá tri thức từ dữ liệu (KDD) bắt đầu bằng khâu làm sạch và tiền xử lý:
+      </p>
+      <ul class="text-muted small">
+        <li><strong>Làm sạch (Data Cleaning):</strong> Xử lý missing data, khử trùng lặp theo Date, loại bỏ các phiên có Close &le; 0 hoặc Volume &le; 0.</li>
+        <li><strong>Biến đổi dữ liệu (Data Transformation):</strong> Tạo đặc trưng kỹ thuật (Moving Averages, RSI, MACD, Bollinger Bands, Lag features).</li>
+        <li><strong>Chuẩn hóa (Data Normalization):</strong> Z-score scaling: <code>z = (x - &mu;) / &sigma;</code>.</li>
+        <li><strong>Chống Data Leakage:</strong> Scaler chỉ được <code>fit()</code> trên tập Train, sau đó <code>transform()</code> trên Test.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CHUYÊN ĐỀ 2: TẬP THÔ & REDUCT (BÀI 3 & 4) -->
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-warning text-dark fs-6">Bài 3 & 4</span>
+        <h5 class="fw-bold text-white mb-0">Tập Thô (Rough Sets & Reduct)</h5>
+      </div>
+      <p class="text-muted small">
+        Lý thuyết Tập thô (Pawlak) giải quyết sự không chắc chắn và giảm thuộc tính dư thừa:
+      </p>
+      <ul class="text-muted small">
+        <li><strong>Hệ quyết định:</strong> <code>S = (U, C &cup; {d}, V, f)</code>.</li>
+        <li><strong>Quan hệ bất khả phân biệt (IND):</strong> Tập các đối tượng không thể phân biệt theo thuộc tính B &sube; C.</li>
+        <li><strong>Ma trận phân biệt M(S):</strong> Chứa các thuộc tính làm cho hai đối tượng khác nhãn quyết định trở nên khác biệt: <code>c_ij = { a &isin; C | f(x_i, a) &ne; f(x_j, a) }</code> khi <code>d(x_i) &ne; d(x_j)</code>.</li>
+        <li><strong>Tập rút gọn (Reduct):</strong> Tập con thuộc tính tối tiểu <code>RED(C)</code> bảo toàn khả năng phân loại.</li>
+        <li><strong>Thuộc tính lõi (Core):</strong> Giao của tất cả các Reduct: <code>CORE(C) = &bigcap; RED(C)</code>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- CHUYÊN ĐỀ 3: CÂY QUYẾT ĐỊNH & RANDOM FOREST (BÀI 5) -->
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-success text-white fs-6">Bài 5</span>
+        <h5 class="fw-bold text-white mb-0">Cây Quyết Định & Rừng Ngẫu Nhiên (Tree & RF)</h5>
+      </div>
+      <ul class="text-muted small">
+        <li><strong>Cây quyết định (Decision Tree):</strong> Cấu trúc phân cấp gồm Node gốc (Root), Nút điều kiện (Branch/Internal node) và Nút lá (Leaf - nhãn TĂNG/GIẢM).</li>
+        <li><strong>Chỉ số Entropy:</strong> <code>H(S) = -&sum; p_i * log2(p_i)</code> đo lường độ hỗn loạn thông tin.</li>
+        <li><strong>Information Gain:</strong> <code>Gain(S, A) = Info(S) - Info_A(S)</code> (thuật toán ID3/C4.5).</li>
+        <li><strong>Gini Index:</strong> <code>Gini(S) = 1 - &sum; p_i^2</code> (thuật toán CART).</li>
+        <li><strong>Random Forest:</strong> Mô hình Ensemble kết hợp nhiều cây học trên các tập mẫu con ngẫu nhiên (Bootstrap Aggregating / Bagging) và biểu quyết đa số.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CHUYÊN ĐỀ 4: PHÂN LỚP BAYES & LOGISTIC REGRESSION (BÀI 5.1 & 7) -->
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-info text-dark fs-6">Bài 5.1 & 7</span>
+        <h5 class="fw-bold text-white mb-0">Phân Lớp Naive Bayes & Logistic Regression</h5>
+      </div>
+      <ul class="text-muted small">
+        <li><strong>Định lý Bayes:</strong> <code>P(C | X) = [P(X | C) * P(C)] / P(X)</code>.</li>
+        <li><strong>Giả định Naive:</strong> Các đặc trưng độc lập có điều kiện: <code>P(X | C) = &prod; P(x_k | C)</code>.</li>
+        <li><strong>Gaussian Naive Bayes:</strong> Áp dụng phân phối chuẩn Gauss cho thuộc tính liên tục với kỳ vọng &mu; và phương sai &sigma;<sup>2</sup>.</li>
+        <li><strong>Logistic Regression:</strong> Mô hình phân lớp nhị phân ánh xạ tổ hợp tuyến tính <code>z = w^T*x + b</code> qua hàm <code>Sigmoid: &sigma;(z) = 1 / (1 + e^-z)</code> để cho ra xác suất P(TĂNG).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- CHUYÊN ĐỀ 5: GOM CỤM K-MEANS (BÀI 6) -->
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-danger text-white fs-6">Bài 6</span>
+        <h5 class="fw-bold text-white mb-0">Gom Cụm Dữ Liệu (Clustering K-Means)</h5>
+      </div>
+      <ul class="text-muted small">
+        <li><strong>Học không giám sát:</strong> Gom cụm các đối tượng chưa có nhãn sao cho độ tương đồng nội cụm cao nhất và giữa các cụm thấp nhất.</li>
+        <li><strong>Hàm mục tiêu SSE (Inertia):</strong> <code>SSE = &sum; &sum; ||x - c_k||^2</code> (Tổng bình phương khoảng cách Euclid đến tâm cụm).</li>
+        <li><strong>Thuật toán:</strong> 1. Khởi tạo k tâm cụm &rarr; 2. Gán điểm vào tâm gần nhất &rarr; 3. Cập nhật tâm là trung bình cộng các điểm trong cụm &rarr; 4. Lặp đến khi hội tụ.</li>
+        <li><strong>Phương pháp Elbow:</strong> Chọn số cụm k tại điểm uốn của đường cong SSE.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CHUYÊN ĐỀ 6: ĐÁNH GIÁ MÔ HÌNH (BÀI 7) -->
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-purple text-white fs-6">Bài 7</span>
+        <h5 class="fw-bold text-white mb-0">Đánh Giá Hiệu Suất Mô Hình Phân Loại</h5>
+      </div>
+      <div class="theory-math-box small">
+        Accuracy = (TP + TN) / (TP + FP + TN + FN)<br>
+        Error Rate = 1 - Accuracy<br>
+        Precision = TP / (TP + FP)<br>
+        Recall (Sensitivity) = TP / (TP + FN)<br>
+        Specificity = TN / (TN + FP)<br>
+        F1-Score = 2 * (Precision * Recall) / (Precision + Recall)
+      </div>
+      <div class="text-muted small">
+        <strong>ROC & AUC:</strong> Đường cong thể hiện mối quan hệ giữa True Positive Rate (TPR) và False Positive Rate (FPR). Diện tích dưới đường cong AUC càng gần 1.0 thì mô hình phân loại càng xuất sắc.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CÂU HỎI PHẢN BIỆN VÀ GỢI Ý TRẢ LỜI CHO SINH VIÊN BẢO VỆ ĐỒ ÁN -->
+<div class="row g-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-patch-question-fill text-warning"></i> Bộ Câu Hỏi Phản Biện Thường Gặp & Gợi Ý Trả Lời Cho Hội Đồng
+      </div>
+
+      <div class="accordion accordion-flush" id="faqAccordion">
+        <!-- Q1 -->
+        <div class="accordion-item bg-transparent border-secondary">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-dark text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+              1. Dữ liệu đầu vào của hệ thống là gì và biến mục tiêu (Target) được định nghĩa như thế nào?
+            </button>
+          </h2>
+          <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted small">
+              <strong>Trả lời:</strong> Dữ liệu đầu vào là chuỗi thời gian nến lịch sử OHLCV (Open, High, Low, Close, Volume) của các mã cổ phiếu HOSE. Từ dữ liệu thô, hệ thống thực hiện Feature Engineering tạo ra các chỉ số kỹ thuật: MA, RSI, MACD, Bollinger Bands, Lag features. Biến mục tiêu là nhị phân: <code>Target(t) = 1 (TĂNG) nếu Close(t+1) > Close(t)</code> và <code>Target(t) = 0 (GIẢM) nếu Close(t+1) &le; Close(t)</code>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="accordion-item bg-transparent border-secondary">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-dark text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+              2. Đồ án xử lý vấn đề Data Leakage (Rò rỉ dữ liệu) như thế nào?
+            </button>
+          </h2>
+          <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted small">
+              <strong>Trả lời:</strong> Hệ thống tuân thủ 3 nguyên tắc vàng chống Data Leakage:
+              <ol>
+                <li>Tại thời điểm <code>t</code>, đặc trưng chỉ được tính bằng dữ liệu từ thời điểm <code>t</code> trở về trước, tuyệt đối không dùng <code>Close(t+1)</code> làm feature.</li>
+                <li>Phân chia tập Train/Test theo chuỗi thời gian (70% đầu làm Train, 30% sau làm Test), không shuffle ngẫu nhiên.</li>
+                <li>Bộ chuẩn hóa StandardScaler chỉ được <code>fit()</code> trên tập Train, sau đó dùng chính tham số đó để <code>transform()</code> tập Test.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="accordion-item bg-transparent border-secondary">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-dark text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+              3. Tại sao chọn 4 thuật toán Decision Tree, Naive Bayes, Logistic Regression, Random Forest?
+            </button>
+          </h2>
+          <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted small">
+              <strong>Trả lời:</strong> Đây là 4 thuật toán phân lớp tiêu biểu và kinh điển nhất trong giáo trình môn học: Decision Tree minh họa cho mô hình cây chia tách không gian; Naive Bayes minh họa cho mô hình xác suất điều kiện; Logistic Regression minh họa cho mô hình tuyến tính ánh xạ Sigmoid; và Random Forest đại diện cho kỹ thuật học kết hợp (Ensemble Bagging) giúp giảm phương sai (variance) và nâng cao độ chính xác.
+            </div>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="accordion-item bg-transparent border-secondary">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-dark text-white fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+              4. Tại sao đồ án lại sử dụng F1-Score để xác định mô hình tốt nhất thay vì chỉ nhìn vào Accuracy?
+            </button>
+          </h2>
+          <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted small">
+              <strong>Trả lời:</strong> Trong dữ liệu tài chính chứng khoán, phân bổ số phiên TĂNG và GIẢM có thể không hoàn toàn cân bằng 50/50. Nếu chỉ dùng Accuracy, mô hình có thể bị thiên vị nếu đoán hoàn toàn theo lớp đa số. F1-Score là trung bình điều hòa giữa Precision và Recall, đảm bảo mô hình vừa phát tín hiệu chính xác vừa không bỏ sót các cơ hội tăng giá thực tế của thị trường.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

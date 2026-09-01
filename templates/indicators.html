@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Chỉ Số Kỹ Thuật (Feature Engineering) | {{ current_symbol }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-sliders text-cyan me-2"></i>Đặc Trưng Kỹ Thuật (Feature Engineering) - {{ current_symbol }}</h3>
+    <div class="text-muted small">Chuyển đổi dữ liệu chuỗi thời gian OHLCV thành tập đặc trưng phục vụ bài toán phân lớp.</div>
+  </div>
+</div>
+
+<!-- BIỂU ĐỒ TỔNG HỢP CÁC CHỈ BÁO -->
+<div class="row g-4 mb-4">
+  <div class="col-12">
+    <div class="glass-card">
+      <div class="card-title-custom">
+        <i class="bi bi-graph-up-arrow"></i> Biểu Đồ Kỹ Thuật Đa Tầng (Giá, SMA, Bollinger Bands, RSI & MACD)
+      </div>
+      <div id="indicatorsMultiChart" class="chart-box" style="height: 600px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- GIẢI THÍCH CHI TIẾT CÁC NHÓM ĐẶC TRƯNG (BÁO CÁO ĐỒ ÁN) -->
+<div class="row g-4">
+  <div class="col-md-6 col-lg-3">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-warning text-dark fw-bold">1</span>
+        <h6 class="fw-bold text-white mb-0">Moving Average (MA)</h6>
+      </div>
+      <div class="text-muted small mb-3">
+        Đo lường xu hướng trung bình động trong các khung thời gian 5, 10, 20 ngày và hàm lũy thừa EMA 12, 26.
+      </div>
+      <div class="theory-math-box p-2 small">
+        SMA_n = (1/n) * &Sigma; Close_i<br>
+        EMA_t = &alpha;*Close_t + (1-&alpha;)*EMA_{t-1}
+      </div>
+      <div class="text-muted small">
+        <strong>Giá trị hiện tại:</strong><br>
+        SMA 20: <span class="text-white">{{ latest_indicators.SMA_20 | vnd }}</span><br>
+        EMA 12: <span class="text-white">{{ latest_indicators.EMA_12 | vnd }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-3">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-primary text-white fw-bold">2</span>
+        <h6 class="fw-bold text-white mb-0">Momentum - RSI 14</h6>
+      </div>
+      <div class="text-muted small mb-3">
+        Chỉ số sức mạnh tương đối đo lường vận tốc và mức độ thay đổi giá để nhận diện quá mua / quá bán.
+      </div>
+      <div class="theory-math-box p-2 small">
+        RSI = 100 - [100 / (1 + RS)]<br>
+        RS = Avg_Gain / Avg_Loss
+      </div>
+      <div class="text-muted small">
+        <strong>Giá trị hiện tại:</strong><br>
+        RSI 14: <span class="text-info fw-bold">{{ "%.2f"|format(latest_indicators.RSI_14) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-3">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-info text-dark fw-bold">3</span>
+        <h6 class="fw-bold text-white mb-0">MACD (12, 26, 9)</h6>
+      </div>
+      <div class="text-muted small mb-3">
+        Phân kỳ hội tụ trung bình động nhận diện điểm đảo chiều và sự chuyển dịch của dòng tiền.
+      </div>
+      <div class="theory-math-box p-2 small">
+        MACD = EMA_12 - EMA_26<br>
+        Signal = EMA_9(MACD)<br>
+        Hist = MACD - Signal
+      </div>
+      <div class="text-muted small">
+        <strong>Giá trị hiện tại:</strong><br>
+        MACD: <span class="text-cyan">{{ "%.2f"|format(latest_indicators.MACD) }}</span> | 
+        Hist: <span class="text-white">{{ "%.2f"|format(latest_indicators.MACD_Hist) }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-lg-3">
+    <div class="glass-card h-100">
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-success text-white fw-bold">4</span>
+        <h6 class="fw-bold text-white mb-0">Bollinger Bands (20, 2)</h6>
+      </div>
+      <div class="text-muted small mb-3">
+        Dải biến động độ lệch chuẩn đo lường mức độ bung dải của biên độ giá thị trường.
+      </div>
+      <div class="theory-math-box p-2 small">
+        Middle = SMA_20<br>
+        Upper = Middle + 2*&sigma;<br>
+        Lower = Middle - 2*&sigma;
+      </div>
+      <div class="text-muted small">
+        <strong>Giá trị hiện tại:</strong><br>
+        Upper: <span class="text-success">{{ latest_indicators.BB_Upper | vnd }}</span><br>
+        Lower: <span class="text-danger">{{ latest_indicators.BB_Lower | vnd }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  renderTechnicalIndicatorsChart('indicatorsMultiChart', '{{ current_symbol }}');
+});
+</script>
+{% endblock %}

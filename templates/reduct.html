@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Tập Thô (Reduct) & Rút Gọn Đặc Trưng | {{ current_symbol }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="fw-bold text-white mb-1"><i class="bi bi-filter-square text-primary me-2"></i>Tập Thô (Reduct) & Rút Gọn Thuộc Tính Dư Thừa</h3>
+    <div class="text-muted small">Bám sát Bài 3 & 4 Bài giảng: Loại bỏ các chỉ báo trùng lặp/thừa thãi, giữ lại các đặc trưng quan trọng nhất để huấn luyện mô hình nhanh và chính xác hơn.</div>
+  </div>
+</div>
+
+<!-- TỔNG KẾT RÚT GỌN THUỘC TÍNH -->
+<div class="row g-4 mb-4">
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">1. Số chỉ báo ban đầu</div>
+      <div class="fs-3 fw-bold text-white mt-1">{{ rough.total_attributes_initial }}</div>
+      <div class="text-muted" style="font-size:0.75rem;">Toàn bộ MA, RSI, MACD, BB, Lag</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">2. Sau khi rút gọn (Reduct)</div>
+      <div class="fs-3 fw-bold text-success mt-1">{{ rough.reduct_size }}</div>
+      <div class="text-muted" style="font-size:0.75rem;">Giữ lại các chỉ số cốt lõi nhất</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">3. Tỷ lệ giảm kích thước</div>
+      <div class="fs-3 fw-bold text-cyan mt-1">{{ rough.reduction_rate_pct }}%</div>
+      <div class="text-muted" style="font-size:0.75rem;">Giảm tải tính toán và loại bỏ nhiễu</div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="glass-card text-center p-3">
+      <div class="text-muted small text-uppercase">4. Thuộc tính cốt lõi (CORE)</div>
+      <div class="fs-5 fw-bold text-warning mt-2">
+        {% for c in rough.core_attributes %}
+          <span class="badge bg-warning-subtle text-warning border border-warning me-1">{{ c }}</span>
+        {% else %}
+          <span class="badge bg-secondary">Tập Core Rỗng</span>
+        {% endfor %}
+      </div>
+      <div class="text-muted" style="font-size:0.75rem;">Thuộc tính không thể thay thế</div>
+    </div>
+  </div>
+</div>
+
+<!-- GIẢI THÍCH DỄ HIỂU LÝ THUYẾT TẬP THÔ & MA TRẬN PHÂN BIỆT -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-lightbulb-fill text-warning"></i> Bản Chất Thuật Toán Tập Thô (Rough Sets - Bài 3 & 4)
+      </div>
+      <p class="text-muted small">
+        Ý tưởng cơ bản: Nếu ta có quá nhiều chỉ số (25 chỉ báo), nhiều chỉ số sẽ mang thông tin giống nhau (ví dụ SMA5, SMA10, EMA12 đều nói về xu hướng ngắn hạn). Thuật toán Tập thô giúp:
+      </p>
+      <ul class="text-muted small">
+        <li><strong>Rời rạc hóa (Discretization):</strong> Chia các chỉ số liên tục thành 3 mức: Thấp (0), Vừa (1), Cao (2).</li>
+        <li><strong>Ma trận phân biệt (Discernibility Matrix):</strong> Tìm xem cặp ngày nào có kết quả khác nhau (một ngày TĂNG, một ngày GIẢM) thì có những chỉ số nào phân biệt được chúng.</li>
+        <li><strong>Tập Reduct:</strong> Là nhóm chỉ số ít nhất nhưng vẫn đủ sức phân biệt các ngày TĂNG và GIẢM y hệt như khi dùng toàn bộ 25 chỉ số ban đầu.</li>
+      </ul>
+      <div class="alert alert-info small mb-0 py-2 border-info bg-dark">
+        <i class="bi bi-chat-dots me-1"></i> <strong>Cách trả lời giảng viên:</strong> "Reduct là phương pháp giảm thuộc tính dựa trên lý thuyết tập thô, giúp loại bỏ các thuộc tính dư thừa mà không làm mất thông tin phân lớp quan trọng."
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-grid-3x3 text-cyan"></i> Bảng Minh Họa Ma Trận Phân Biệt
+      </div>
+      <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Cặp Ngày Giao Dịch</th>
+              <th>Xu Hướng Khác Nhau</th>
+              <th>Các Chỉ Số Giúp Phân Biệt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in rough.matrix_samples %}
+            <tr>
+              <td class="fw-bold text-white">{{ item.pair }}</td>
+              <td><span class="badge bg-secondary">{{ item.decision }}</span></td>
+              <td>
+                {% for a in item.diff_attributes %}
+                  <span class="badge bg-dark border border-secondary text-info me-1">{{ a }}</span>
+                {% endfor %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="text-muted small mt-2">
+        Đã kiểm tra phân biệt trên <strong class="text-white">{{ rough.total_different_pairs }}</strong> cặp ngày giao dịch đối lập.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SO SÁNH VỚI PHƯƠNG PHÁP CHỌN THUỘC TÍNH KHÁC -->
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-bar-chart-steps text-warning"></i> 1. Xếp Hạng Mức Độ Quan Trọng (Random Forest)
+      </div>
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Tên Chỉ Số</th>
+              <th class="text-end">Mức Độ Đóng Góp (%)</th>
+              <th>Thanh Trực Quan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in selection.rf_ranking[:8] %}
+            <tr>
+              <td><span class="badge bg-dark text-muted">#{{ loop.index }}</span></td>
+              <td class="fw-bold text-white">{{ item.feature }}</td>
+              <td class="text-end text-warning fw-bold">{{ item.importance }}%</td>
+              <td style="width: 35%;">
+                <div class="progress bg-dark" style="height: 8px;">
+                  <div class="progress-bar bg-warning" style="width: {{ item.importance * 3 }}%;"></div>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="glass-card h-100">
+      <div class="card-title-custom">
+        <i class="bi bi-funnel text-cyan"></i> 2. Xếp Hạng Thống Kê (SelectKBest ANOVA)
+      </div>
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Tên Chỉ Số</th>
+              <th class="text-end">Điểm Thống Kê F-Score</th>
+              <th class="text-end">Tương Quan Với Target</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in selection.kbest_ranking[:8] %}
+            <tr>
+              <td><span class="badge bg-dark text-muted">#{{ loop.index }}</span></td>
+              <td class="fw-bold text-white">{{ item.feature }}</td>
+              <td class="text-end text-cyan fw-bold">{{ item.f_score }}</td>
+              <td class="text-end text-muted">
+                {% for corr in selection.correlation_ranking %}
+                  {% if corr.feature == item.feature %}
+                    {{ corr.correlation }}
+                  {% endif %}
+                {% endfor %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

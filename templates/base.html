@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Dự Đoán Xu Hướng Cổ Phiếu HOSE | Đồ Án Khai Thác Dữ Liệu{% endblock %}</title>
+  
+  <!-- Bootstrap 5.3 & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- SIDEBAR NAVIGATION -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo-icon">
+        <i class="bi bi-graph-up-arrow"></i>
+      </div>
+      <div>
+        <div class="sidebar-brand-title">HOSE PREDICT</div>
+        <div class="sidebar-brand-subtitle">Data Mining System</div>
+      </div>
+    </div>
+    
+    <div class="sidebar-nav">
+      <div class="nav-section-title">Tổng quan & Dữ liệu</div>
+      <a href="{{ url_for('main.dashboard', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'dashboard' %}active{% endif %}">
+        <i class="bi bi-speedometer2"></i> Dashboard Tổng Quan
+      </a>
+      <a href="{{ url_for('main.historical', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'historical' %}active{% endif %}">
+        <i class="bi bi-calendar3-range"></i> Dữ Liệu Lịch Sử (OHLCV)
+      </a>
+      <a href="{{ url_for('main.indicators', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'indicators' %}active{% endif %}">
+        <i class="bi bi-sliders"></i> Chỉ Số Kỹ Thuật (TA)
+      </a>
+
+      <div class="nav-section-title mt-2">Khai Phá & Huấn Luyện</div>
+      <a href="{{ url_for('main.reduct', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'reduct' %}active{% endif %}">
+        <i class="bi bi-filter-square"></i> Tập Thô & Rút Gọn (Reduct)
+      </a>
+      <a href="{{ url_for('main.training', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'training' %}active{% endif %}">
+        <i class="bi bi-cpu"></i> Huấn Luyện Mô Hình
+      </a>
+      <a href="{{ url_for('main.comparison', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'comparison' %}active{% endif %}">
+        <i class="bi bi-bar-chart-line"></i> So Sánh Thuật Toán
+      </a>
+
+      <div class="nav-section-title mt-2">Dự Báo & Mở Rộng</div>
+      <a href="{{ url_for('main.prediction', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'prediction' %}active{% endif %}">
+        <i class="bi bi-magic"></i> Dự Đoán Phiên Tiếp Theo
+      </a>
+      <a href="{{ url_for('main.clustering') }}" class="nav-item-link {% if active_page == 'clustering' %}active{% endif %}">
+        <i class="bi bi-diagram-3"></i> Gom Cụm K-Means
+      </a>
+      <a href="{{ url_for('main.sentiment', symbol=current_symbol) }}" class="nav-item-link {% if active_page == 'sentiment' %}active{% endif %}">
+        <i class="bi bi-chat-heart"></i> Khai Thác Mạng Xã Hội
+      </a>
+      
+      <div class="nav-section-title mt-2">Học Thuật & Báo Cáo</div>
+      <a href="{{ url_for('main.theory') }}" class="nav-item-link {% if active_page == 'theory' %}active{% endif %}">
+        <i class="bi bi-book"></i> Cơ Sở Lý Thuyết Bài Giảng
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-mortarboard me-1"></i> Đồ Án Khai Thác DL</span>
+        <span class="badge bg-primary-subtle text-primary">v2.6</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- TOP HEADER NAVBAR -->
+    <header class="top-header">
+      <div class="header-left">
+        <div class="stock-selector-wrap">
+          <i class="bi bi-currency-exchange text-warning"></i>
+          <span class="text-muted small">Mã:</span>
+          <select id="globalSymbolSelect" onchange="changeGlobalSymbol(this.value)">
+            {% for s in symbols %}
+              <option value="{{ s }}" {% if s == current_symbol %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="d-none d-md-flex align-items-center gap-2">
+          <span class="badge bg-dark border border-secondary px-3 py-2 text-muted">
+            <i class="bi bi-shield-check text-success me-1"></i> 100% Anti Data Leakage
+          </span>
+          <span class="badge bg-dark border border-secondary px-3 py-2 text-muted">
+            <i class="bi bi-clock-history text-info me-1"></i> Time Series Split 70/30
+          </span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Nút Tải Lên CSV -->
+        <button class="btn btn-outline-custom btn-sm" data-bs-toggle="modal" data-bs-target="#uploadCsvModal">
+          <i class="bi bi-cloud-arrow-up me-1"></i> Nạp Dữ Liệu CSV
+        </button>
+
+        <a href="{{ url_for('main.theory') }}" class="btn btn-primary-custom btn-sm">
+          <i class="bi bi-journal-text me-1"></i> Hướng Dẫn Bảo Vệ
+        </a>
+      </div>
+    </header>
+
+    <!-- FLASH MESSAGES -->
+    <div class="px-4 pt-3">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              <i class="bi bi-info-circle me-2"></i> {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- PAGE CONTAINER -->
+    <div class="page-container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+
+<!-- MODAL UPLOAD CSV -->
+<div class="modal fade" id="uploadCsvModal" tabindex="-1" aria-labelledby="uploadCsvModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass-card" style="background: #1e293b; border-color: rgba(255,255,255,0.15);">
+      <div class="modal-header border-bottom border-secondary">
+        <h5 class="modal-title" id="uploadCsvModalLabel"><i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Tải Lên File Dữ Liệu Cổ Phiếu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('main.api_upload_csv') }}" method="POST" enctype="multipart/form-data">
+        <div class="modal-body">
+          <p class="text-muted small">Hỗ trợ file CSV chứa dữ liệu giá lịch sử. Hệ thống tự động nhận diện các cột: <code>Date, Open, High, Low, Close, Volume</code> (hoặc tiếng Việt: <code>Ngay, MoCua, CaoNhat, ThapNhat, DongCua, KhoiLuong</code>).</p>
+          
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Mã cổ phiếu (Tùy chọn nhập mã mới):</label>
+            <input type="text" name="symbol" class="form-control bg-dark text-white border-secondary" placeholder="Ví dụ: VCB, FPT, HPG...">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-white small fw-bold">Chọn file CSV:</label>
+            <input type="file" name="file" class="form-control bg-dark text-white border-secondary" accept=".csv" required>
+          </div>
+        </div>
+        <div class="modal-footer border-top border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary-custom">Tải Lên & Xử Lý</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap 5.3 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>
