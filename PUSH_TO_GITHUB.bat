@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title PUSH CODE LEN GITHUB REPOSITORY
+title DONG BO VA PUSH CODE LEN GITHUB
 echo ==============================================================================
 echo       KHOA CONG NGHE THONG TIN - MON KHAI THAC DU LIEU & TRUYEN THONG XA HOI
 echo          DONG BO VA PUSH SOURCE CODE LEN GITHUB REPOSITORY
@@ -14,22 +14,30 @@ if not exist "%GIT_CMD%" (
     if %errorlevel% equ 0 (
         set "GIT_CMD=git"
     ) else (
-        echo [LOI] Khong tim thay Git tren he thong.
+        echo [LOI] Khong tim thay Git tren may.
         pause
         exit /b 1
     )
 )
 
-echo [*] Su dung Git tai: %GIT_CMD%
-echo [*] Repository dich: https://github.com/vile110196/doanmonkhaithacdulieutruyenthongvaxahoi.git
-echo.
+"%GIT_CMD%" config --global credential.helper manager
 
+echo [*] Repository dich: https://github.com/vile110196/doanmonkhaithacdulieutruyenthongvaxahoi.git
+echo [*] Nhanh: main
+echo.
+echo [*] Dang chuan bi cac file...
 "%GIT_CMD%" add .
 "%GIT_CMD%" commit -m "feat: complete data mining stock prediction web app for HOSE stocks" 2>nul
 "%GIT_CMD%" branch -M main
 
-echo [*] Dang tien hanh day code len GitHub...
-echo (Neu he thong yeu cau dang nhap, vui long nhap GitHub Username va Personal Access Token / Mat khau)
+echo.
+echo ==============================================================================
+echo  LUU Y XAC THUC GITHUB:
+echo  1. Trinh duyet hoac cua so dang nhap GitHub se hien len.
+echo  2. Ban chi can bam "Sign in with your browser" hoac nhap Token/Mat khau.
+echo ==============================================================================
+echo.
+echo [*] Dang tien hanh Push code len GitHub...
 echo.
 
 "%GIT_CMD%" push -u origin main
@@ -37,15 +45,24 @@ echo.
 if %errorlevel% equ 0 (
     echo.
     echo ==============================================================================
-    echo  [THANH CONG] SOURCE CODE DA DUOC PUSH LEN GITHUB REPO HOAN TAT!
-    echo  Dia chi: https://github.com/vile110196/doanmonkhaithacdulieutruyenthongvaxahoi
+    echo  [THANH CONG RUC RO!] SOURCE CODE DA DUOC PUSH LEN GITHUB REPO HOAN TAT!
+    echo  Kiem tra tai: https://github.com/vile110196/doanmonkhaithacdulieutruyenthongvaxahoi
     echo ==============================================================================
 ) else (
     echo.
-    echo [THONG BAO] Neu gap loi xac thuc quyen (Authentication failed):
-    echo Ban co the tao GitHub Personal Access Token tai: https://github.com/settings/tokens (chon quyen 'repo')
-    echo Sau do chay lenh:
-    echo   "%GIT_CMD%" push https://TOKEN_CUA_BAN@github.com/vile110196/doanmonkhaithacdulieutruyenthongvaxahoi.git main
+    echo ==============================================================================
+    echo  [HUONG DAN NEU CAN DUNG TOKEN TRUC TIEP]
+    echo  Neu ban co GitHub Personal Access Token (PAT), co the nhap truc tiep duoi day:
+    echo ==============================================================================
+    set /p "USER_TOKEN=Nhap GitHub Token cua ban (hoac an Enter de thoat): "
+    if not "%USER_TOKEN%"=="" (
+        echo Dang push voi Token...
+        "%GIT_CMD%" push https://%USER_TOKEN%@github.com/vile110196/doanmonkhaithacdulieutruyenthongvaxahoi.git main
+        if %errorlevel% equ 0 (
+            echo.
+            echo [THANH CONG] Da push code len GitHub thanh cong!
+        )
+    )
 )
 
 echo.
